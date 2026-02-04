@@ -27,7 +27,8 @@ Where `<X>` represents the lab number.
 | Lab | Title | Repository Path |
 | :--- | :--- | :--- |
 | **Lab 01** | Stellar Luminosity Regression | `~/data/AREP/AREP-L1` |
-| **Lab 02** | (Pending / Next) | `~/data/AREP/AREP-L2` |
+| **Lab 02** | Heart Disease Prediction | `~/data/AREP/AREP-L2` |
+| **Lab 03** | Convolutional Neural Networks | `~/data/AREP/AREP-L3` |
 
 ---
 
