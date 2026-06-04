@@ -100,3 +100,28 @@
   - The original user request remains auditable and reusable.
   - Session resume decisions become evidence-based.
   - Additional token cost is controlled by `workflows/prompt-intake.workflow.md` and targeted search.
+
+---
+
+## ADR-008: SonarQube CI/CD via Self-Hosted GitHub Runner on Windows 11
+- **Fecha**: 2026-06-02
+- **Estado**: Aprobado
+- **Contexto**: Se requiere integrar SonarQube en el pipeline de CI/CD de GitHub Actions para ambos repositorios (frontend y backend). El servidor SonarQube de la empresa corre en un server físico Windows 11 (i3, 4 cores, 16GB RAM) que no está expuesto a internet — solo es accesible vía VPN.
+- **Decisión**: Instalar un GitHub Actions self-hosted runner en el mismo servidor Windows 11 donde corre SonarQube. El runner hace polling saliente (HTTPS 443) a GitHub y ejecuta `sonar-scanner` contra `localhost:9005`. El CI se divide en dos jobs: `validate` (cloud runner, gratis) y `sonarqube` (self-hosted runner, labels `[self-hosted, sonar]`). Se usa `run: sonar-scanner` directamente en vez de la GitHub Action de Docker.
+- **Alternativas Consideradas**:
+  - Cloudflare Tunnel para exponer SonarQube (rechazado por exponer el servicio a internet).
+  - VPN desde runner cloud de GitHub usando credenciales .ovpn (rechazado por riesgo de seguridad y complejidad).
+  - GitHub Action `SonarSource/sonarqube-scan-action@v4` (rechazado porque usa Docker internamente y no corre en runners Windows).
+- **Consecuencias**:
+  - Cero exposición del servidor a internet.
+  - Mínima carga en el server: solo el scanner temporal (~2-3 min por análisis).
+  - GitHub Secrets (`SONAR_TOKEN`, `SONAR_HOST_URL`) necesarios en ambos repos.
+  - Si el server se apaga, los jobs de SonarQube quedan en cola hasta que vuelva.
+- **Implementación de referencia** (frontend, 2026-06-02): la forma estándar del job `sonarqube` quedó codificada como plantilla en [patterns.md](patterns.md) §8 para replicar en backend. El job incorpora estándares de robustez que forman parte de esta decisión:
+  - `needs: validate` (lint/type-check/build corren gratis en cloud antes del scan), `timeout-minutes: 10`, `concurrency` por ref con `cancel-in-progress`, skip de PRs en borrador, `shell: pwsh`.
+  - Step "Verify prerequisites" que falla rápido si `sonar-scanner` no está en PATH o faltan secrets (ver [mistakes.md](mistakes.md) §8).
+  - Mask de env vars de PR (`GITHUB_EVENT_NAME`, `GITHUB_REF`, `GITHUB_BASE_REF`, `GITHUB_HEAD_REF`) porque el servidor corre **Community Edition**, que no soporta PR/branch analysis (ver [mistakes.md](mistakes.md) §9).
+  - `pnpm install --frozen-lockfile` antes del scan para que el analizador TS resuelva imports y `tsconfigPaths`.
+  - Quality Gate **report-only** en esta fase (sin `sonar.qualitygate.wait=true`); bloqueo del PR vía Branch Protection queda como mejora futura.
+  - `.scannerwork/` git-ignored; no se necesita limpieza manual porque `actions/checkout@v4` corre `git clean -ffdx` por default.
+
