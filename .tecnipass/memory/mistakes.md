@@ -43,3 +43,24 @@
 - **Error**: Configurar la clave de proyecto como `Tecnipass-Front` en el scanner de la terminal, mientras que en SonarQube estaba definida como `Tecnipass-Frontend`.
 - **Impacto**: Los reportes de cobertura y bugs se subían a un proyecto fantasma, dejando la rama principal sin reportes de calidad actualizados.
 - **Cómo Evitarlo**: Utiliza siempre los nombres correctos definidos en [env.json](file:///C:/Users/user/Documents/Obsidian%20Vault/TECNI/.tecnipass/env.json): `Tecnipass-Frontend` y `Tecnipass-Backend`. No abrevies los nombres de los proyectos.
+
+---
+
+## 7. Reutilizar componentes de UI para estados de negocio sem�nticamente distintos
+- **Error**: Reutilizar el mismo componente y constante de texto (GuestPendingRegistrationWithoutAttachmentsMessage) tanto para el estado de "Aprobaci�n Pendiente sin Adjuntos" como para "Registro Pendiente", lo que causaba que la recepci�n mostrara alertas il�gicas (ej. pedir aprobaci�n cuando a�n falta registro).
+- **Impacto**: Confusi�n operativa en recepci�n al presentar botones y mensajes incorrectos al flujo de negocio en el que se encontraba el visitante.
+- **C�mo Evitarlo**: Separa siempre los componentes de alerta y botones seg�n el **estado sem�ntico del proceso** (ej. PendingApproval vs PendingRegistration). No acoples la UI bas�ndote �nicamente en una condici�n t�cnica (como "sin adjuntos"), ya que cada estado de negocio requiere instrucciones y acciones (ActionButtons) �nicas.
+
+---
+
+## 8. Asumir que el self-hosted runner ve los cambios de PATH del sistema sin reiniciar
+- **Error**: Instalar `sonar-scanner` y agregarlo al PATH del sistema **después** de haber registrado el GitHub Actions runner como servicio de Windows. El job falla con `'sonar-scanner' is not recognized` aunque el comando funcione perfecto en una terminal del server.
+- **Impacto**: Pipeline en rojo con un mensaje confuso; se pierde tiempo depurando una "instalación rota" que en realidad está bien.
+- **Cómo Evitarlo**: Un Windows Service hereda las variables de entorno (incluido el PATH) al momento de arrancar y **no las refresca** hasta reiniciarse. Tras cualquier cambio de PATH en el server, ejecutar `Restart-Service actions.runner.*`. El workflow incluye un step "Verify prerequisites" que detecta este caso y lo reporta con la instrucción exacta. Ver patrón en `patterns.md` §8.
+
+---
+
+## 9. Dejar que sonar-scanner auto-detecte modo PR en SonarQube Community Edition
+- **Error**: Ejecutar `sonar-scanner` dentro de GitHub Actions sin enmascarar las env vars de PR. El scanner detecta `GITHUB_EVENT_NAME=pull_request` y activa automáticamente el análisis de Pull Request / branch, que **no está soportado en Community Edition** (solo Developer Edition+). El scan falla con un error de licencia/feature no disponible.
+- **Impacto**: El primer PR real rompe el pipeline pese a que el scan local en `main` funcionaba sin problemas. Diagnóstico no obvio porque el error apunta a "branch analysis" sin mencionar la edición.
+- **Cómo Evitarlo**: En el step del scan, fijar a string vacío `GITHUB_EVENT_NAME`, `GITHUB_REF`, `GITHUB_BASE_REF` y `GITHUB_HEAD_REF`. Así el scanner trata cada ejecución como análisis de la rama principal (mismo comportamiento que correr el scanner localmente), y el reporte sube correctamente. Si en el futuro se migra a Developer Edition, revertir el mask para habilitar PR decoration. Ver `patterns.md` §8 y [ADR-008](decisions.md).

@@ -17,7 +17,7 @@
 | **Feedback** | En Desarrollo Activo | Sergio Silva | Refactorización de DTOs en curso para coincidir con el contrato de la API. |
 | **Employee Registration** | Estable | Sergio Silva | Flujos de `PendingApproval` y `PendingRegistration` completamente implementados. |
 | **Quick Invitation** | Estable | Sergio Silva | Flujo funcional con soporte para variantes `continue` y `employeedata`. |
-| **SonarQube Quality** | Configurado | Tomás Panqueva | Escaneo de frontend y backend activo. Integrando quality gates a pre-commits. |
+| **SonarQube Quality** | En Desarrollo Activo | Sergio Silva | Server on-prem (Windows 11, puerto 9005, **Community Edition**). Self-hosted runner instalado y conectado. **Frontend**: pipeline auditado y endurecido (precheck de prerequisitos, mask de PR vars para Community Edition, pnpm install, timeout/concurrency), 8 commits atómicos en rama `ci/sonarqube`, listo para review/push humano. Plantilla reutilizable en `patterns.md` §8. **Backend**: pendiente (T4) — replicar plantilla. Pendiente global: configurar GitHub Secrets (`SONAR_TOKEN`, `SONAR_HOST_URL`). |
 | **Mobile / Responsive** | En Desarrollo Activo | Sergio Silva | Diseño responsivo e interfaces adaptativas en flujos de recepción clave. |
 
 ---
